@@ -1,13 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { 
   Settings, 
   CheckCircle2, 
   MapPin, 
   Briefcase, 
   GraduationCap, 
-  Plus,
   ChevronRight,
   LogOut,
   Shield,
@@ -18,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile, useUserPhotos, useUserInterests, useInterests, useUpdateProfile } from "@/hooks/useProfile";
+import PhotoUploader from "@/components/PhotoUploader";
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -115,48 +114,7 @@ const Profile = () => {
 
       {/* Photos Section */}
       <section className="px-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold text-foreground">My Photos</h2>
-          <span className="text-sm text-primary">{photos?.length || 0}/6 ADDED</span>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">Hold and drag photos to reorder.</p>
-
-        <div className="grid grid-cols-3 gap-3">
-          {/* Existing Photos */}
-          {photos?.slice(0, 5).map((photo, index) => (
-            <motion.div
-              key={photo.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              className="relative aspect-[3/4] rounded-2xl overflow-hidden"
-            >
-              <img
-                src={photo.photo_url}
-                alt="Profile"
-                className="h-full w-full object-cover"
-              />
-              {photo.is_primary && (
-                <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-medium">
-                  MAIN
-                </div>
-              )}
-            </motion.div>
-          ))}
-
-          {/* Add Photo Button */}
-          {(photos?.length || 0) < 6 && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="aspect-[3/4] rounded-2xl border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors"
-            >
-              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-                <Plus className="h-5 w-5 text-primary-foreground" />
-              </div>
-            </motion.button>
-          )}
-        </div>
+        <PhotoUploader photos={photos || []} maxPhotos={6} />
       </section>
 
       {/* About Me */}
