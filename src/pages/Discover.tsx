@@ -1,94 +1,78 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Flame, SlidersHorizontal, X, Heart, Star, Zap, RotateCcw } from "lucide-react";
+import { Flame, SlidersHorizontal, X, Heart, Star, Zap, RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProfileCard } from "@/components/ProfileCard";
 import { Logo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
-
-import profileWoman1 from "@/assets/profile-woman-1.jpg";
-import profileMan1 from "@/assets/profile-man-1.jpg";
-import profileWoman2 from "@/assets/profile-woman-2.jpg";
-import profileMan2 from "@/assets/profile-man-2.jpg";
-
-const mockProfiles = [
-  {
-    id: "1",
-    name: "Chidimma",
-    age: 24,
-    location: "Lekki Phase 1",
-    distance: "3km away",
-    bio: "Love Afrobeats and beach weekends at Landmark. Looking for good vibes and someone who knows the best suya spots 🍖",
-    image: profileWoman1,
-    verified: true,
-    interests: ["Afrobeats", "Suya dates", "Beach"],
-  },
-  {
-    id: "2",
-    name: "Emeka",
-    age: 27,
-    location: "Victoria Island",
-    distance: "5km away",
-    bio: "Tech bro by day, football lover by night. Let's argue about Arsenal or find the best amala in Lagos 🙌",
-    image: profileMan1,
-    verified: true,
-    interests: ["Football", "Tech", "Amala"],
-  },
-  {
-    id: "3",
-    name: "Adaeze",
-    age: 25,
-    location: "Ikeja GRA",
-    distance: "8km away",
-    bio: "Fashion designer with a love for Nollywood. Looking for someone to binge movies and explore street food with ✨",
-    image: profileWoman2,
-    verified: false,
-    interests: ["Fashion", "Nollywood", "Street food"],
-  },
-  {
-    id: "4",
-    name: "Tunde",
-    age: 29,
-    location: "Lekki Phase 2",
-    distance: "4km away",
-    bio: "Fitness enthusiast and Amapiano lover. Let's hit the gym then vibe at a beach club 🏋️‍♂️",
-    image: profileMan2,
-    verified: true,
-    interests: ["Gym", "Amapiano", "Beach clubs"],
-  },
-];
+import { useDiscoveryProfiles, useSwipe, DiscoveryProfile } from "@/hooks/useDiscovery";
+import { useProfile } from "@/hooks/useProfile";
 
 const Discover = () => {
   const { toast } = useToast();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [swipedProfiles, setSwipedProfiles] = useState<string[]>([]);
+  const { data: profiles, isLoading, refetch } = useDiscoveryProfiles();
+  const { data: myProfile } = useProfile();
+  const swipeMutation = useSwipe();
+  
+  const [swipedIds, setSwipedIds] = useState<string[]>([]);
+  const [lastSwipedId, setLastSwipedId] = useState<string | null>(null);
 
   const remainingProfiles = useMemo(() => {
-    return mockProfiles.filter((p) => !swipedProfiles.includes(p.id));
-  }, [swipedProfiles]);
+    return (profiles || []).filter((p) => !swipedIds.includes(p.user_id));
+  }, [profiles, swipedIds]);
 
-  const handleSwipe = (direction: "left" | "right" | "up") => {
+  const handleSwipe = async (direction: "left" | "right" | "up") => {
     const profile = remainingProfiles[0];
     if (!profile) return;
 
-    setSwipedProfiles((prev) => [...prev, profile.id]);
+    // Optimistically remove from list
+    setSwipedIds((prev) => [...prev, profile.user_id]);
+    setLastSwipedId(profile.user_id);
 
-    if (direction === "right") {
-      toast({
-        title: "It's a vibe! 💚",
-        description: `You liked ${profile.name}`,
+    const action = direction === "right" ? "like" : direction === "up" ? "super_like" : "pass";
+
+    try {
+      const result = await swipeMutation.mutateAsync({
+        targetUserId: profile.user_id,
+        action,
       });
-    } else if (direction === "up") {
+
+      if (result.isMatch) {
+        toast({
+          title: "It's a Match! 🎉",
+          description: `You and ${profile.display_name} liked each other! Start chatting now.`,
+        });
+      } else if (direction === "right") {
+        toast({
+          title: "It's a vibe! 💚",
+          description: `You liked ${profile.display_name}`,
+        });
+      } else if (direction === "up") {
+        toast({
+          title: "Super Like! ⭐",
+          description: `${profile.display_name} will see you liked them first!`,
+        });
+      }
+    } catch (error: any) {
+      // Revert optimistic update
+      setSwipedIds((prev) => prev.filter(id => id !== profile.user_id));
+      
       toast({
-        title: "Super Like! ⭐",
-        description: `${profile.name} will see you liked them first!`,
+        title: "Swipe failed",
+        description: error.message || "Please try again",
+        variant: "destructive",
       });
     }
   };
 
-  const handleAction = (action: "undo" | "dislike" | "superlike" | "like" | "boost") => {
-    if (action === "undo" && swipedProfiles.length > 0) {
-      setSwipedProfiles((prev) => prev.slice(0, -1));
+  const handleAction = async (action: "undo" | "dislike" | "superlike" | "like" | "boost") => {
+    if (action === "undo" && lastSwipedId) {
+      setSwipedIds((prev) => prev.filter(id => id !== lastSwipedId));
+      setLastSwipedId(null);
+      toast({
+        title: "Undo successful",
+        description: "Profile restored to your deck",
+      });
       return;
     }
 
@@ -96,13 +80,13 @@ const Discover = () => {
 
     switch (action) {
       case "dislike":
-        handleSwipe("left");
+        await handleSwipe("left");
         break;
       case "like":
-        handleSwipe("right");
+        await handleSwipe("right");
         break;
       case "superlike":
-        handleSwipe("up");
+        await handleSwipe("up");
         break;
       case "boost":
         toast({
@@ -112,6 +96,15 @@ const Discover = () => {
         break;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background pb-24">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Finding matches near you...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-background pb-24">
@@ -131,9 +124,23 @@ const Discover = () => {
         </Button>
       </header>
 
+      {/* Swipe Stats */}
+      {myProfile && (
+        <div className="px-4 py-2 flex justify-center gap-4 text-sm">
+          <span className="text-muted-foreground">
+            <Heart className="h-4 w-4 inline mr-1 text-secondary" />
+            {myProfile.daily_swipes_remaining} swipes left
+          </span>
+          <span className="text-muted-foreground">
+            <Star className="h-4 w-4 inline mr-1 text-primary" />
+            {myProfile.daily_super_likes_remaining} super likes
+          </span>
+        </div>
+      )}
+
       {/* Card Stack */}
       <div className="flex-1 relative px-4 py-2">
-        <div className="relative h-[calc(100vh-280px)] max-h-[600px] w-full max-w-md mx-auto">
+        <div className="relative h-[calc(100vh-320px)] max-h-[550px] w-full max-w-md mx-auto">
           <AnimatePresence>
             {remainingProfiles.length === 0 ? (
               <motion.div
@@ -145,16 +152,22 @@ const Discover = () => {
                   <Heart className="h-10 w-10 text-muted-foreground" />
                 </div>
                 <h3 className="font-display text-xl font-bold text-foreground mb-2">
-                  No more profiles
+                  {profiles?.length === 0 ? "No profiles yet" : "No more profiles"}
                 </h3>
-                <p className="text-muted-foreground text-sm max-w-xs">
-                  You've seen everyone nearby. Check back later or expand your distance settings.
+                <p className="text-muted-foreground text-sm max-w-xs mb-4">
+                  {profiles?.length === 0 
+                    ? "Be the first to create a profile and start matching!"
+                    : "You've seen everyone nearby. Check back later or expand your distance settings."
+                  }
                 </p>
+                <Button variant="outline" onClick={() => refetch()}>
+                  Refresh
+                </Button>
               </motion.div>
             ) : (
               remainingProfiles.slice(0, 3).map((profile, index) => (
                 <ProfileCard
-                  key={profile.id}
+                  key={profile.user_id}
                   profile={profile}
                   onSwipe={handleSwipe}
                   isTop={index === 0}
@@ -172,7 +185,7 @@ const Discover = () => {
             variant="action"
             size="icon"
             onClick={() => handleAction("undo")}
-            disabled={swipedProfiles.length === 0}
+            disabled={!lastSwipedId || swipeMutation.isPending}
           >
             <RotateCcw className="h-5 w-5 text-secondary" />
           </Button>
@@ -181,7 +194,7 @@ const Discover = () => {
             variant="action-dislike"
             size="icon-lg"
             onClick={() => handleAction("dislike")}
-            disabled={remainingProfiles.length === 0}
+            disabled={remainingProfiles.length === 0 || swipeMutation.isPending}
           >
             <X className="h-7 w-7" />
           </Button>
@@ -190,7 +203,7 @@ const Discover = () => {
             variant="action-superlike"
             size="icon"
             onClick={() => handleAction("superlike")}
-            disabled={remainingProfiles.length === 0}
+            disabled={remainingProfiles.length === 0 || swipeMutation.isPending || (myProfile?.daily_super_likes_remaining || 0) <= 0}
           >
             <Star className="h-5 w-5" />
           </Button>
@@ -199,7 +212,7 @@ const Discover = () => {
             variant="action-like"
             size="icon-lg"
             onClick={() => handleAction("like")}
-            disabled={remainingProfiles.length === 0}
+            disabled={remainingProfiles.length === 0 || swipeMutation.isPending || (myProfile?.daily_swipes_remaining || 0) <= 0}
           >
             <Heart className="h-7 w-7 fill-current" />
           </Button>

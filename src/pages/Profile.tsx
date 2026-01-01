@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   Settings, 
@@ -5,110 +7,155 @@ import {
   MapPin, 
   Briefcase, 
   GraduationCap, 
-  Edit3,
-  Camera,
   Plus,
-  ChevronRight
+  ChevronRight,
+  LogOut,
+  Shield,
+  Crown,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-import profileMan1 from "@/assets/profile-man-1.jpg";
-
-const interests = ["Afrobeats", "Suya", "Tech", "Football", "Beach", "Amapiano"];
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile, useUserPhotos, useUserInterests, useInterests, useUpdateProfile } from "@/hooks/useProfile";
 
 const Profile = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const { signOut } = useAuth();
+  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { data: photos } = useUserPhotos();
+  const { data: userInterests } = useUserInterests();
+  const { data: allInterests } = useInterests();
+  const updateProfile = useUpdateProfile();
+  
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Error signing out",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  // Get interest names from IDs
+  const userInterestNames = userInterests?.map(ui => {
+    const interest = allInterests?.find(i => i.id === ui.interest_id);
+    return interest ? { ...interest } : null;
+  }).filter(Boolean) || [];
+
+  if (profileLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center">
+        <h2 className="font-display text-xl font-bold text-foreground mb-2">Profile not found</h2>
+        <p className="text-muted-foreground mb-4">Please complete your profile setup.</p>
+        <Button variant="hero" onClick={() => navigate("/onboarding")}>
+          Set Up Profile
+        </Button>
+      </div>
+    );
+  }
+
+  const primaryPhoto = photos?.find(p => p.is_primary) || photos?.[0];
+
   return (
     <div className="min-h-screen flex flex-col bg-background pb-24">
       {/* Header */}
       <header className="px-4 py-4 pt-safe flex justify-between items-center">
-        <span className="text-muted-foreground">Cancel</span>
+        <span className="text-muted-foreground cursor-pointer" onClick={() => navigate(-1)}>
+          Cancel
+        </span>
         <h1 className="font-display text-lg font-bold text-foreground">Edit Profile</h1>
         <Button variant="ghost" size="icon">
           <Settings className="h-5 w-5" />
         </Button>
       </header>
 
+      {/* Subscription Status */}
+      {profile.subscription_tier !== "free" && (
+        <div className="mx-4 mb-4 p-3 rounded-2xl bg-gradient-to-r from-secondary/20 to-primary/20 flex items-center gap-3">
+          <Crown className="h-5 w-5 text-secondary" />
+          <span className="font-medium text-foreground capitalize">{profile.subscription_tier} Member</span>
+        </div>
+      )}
+
+      {/* Verification Status */}
+      <div className="mx-4 mb-4 p-3 rounded-2xl bg-muted/50 flex items-center gap-3">
+        <Shield className={`h-5 w-5 ${profile.is_verified ? "text-primary" : "text-muted-foreground"}`} />
+        <div className="flex-1">
+          <span className="font-medium text-foreground">
+            {profile.is_verified ? "Verified Profile" : "Get Verified"}
+          </span>
+          {!profile.is_verified && (
+            <p className="text-xs text-muted-foreground">Increase matches by 30%</p>
+          )}
+        </div>
+        {profile.is_verified ? (
+          <CheckCircle2 className="h-5 w-5 text-primary" />
+        ) : (
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        )}
+      </div>
+
       {/* Photos Section */}
       <section className="px-4 mb-6">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-foreground">My Photos</h2>
-          <span className="text-sm text-primary">4/6 ADDED</span>
+          <span className="text-sm text-primary">{photos?.length || 0}/6 ADDED</span>
         </div>
         <p className="text-sm text-muted-foreground mb-4">Hold and drag photos to reorder.</p>
 
         <div className="grid grid-cols-3 gap-3">
-          {/* Main Photo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="relative aspect-[3/4] rounded-2xl overflow-hidden col-span-1"
-          >
-            <img
-              src={profileMan1}
-              alt="Profile"
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-medium">
-              MAIN
-            </div>
-            <button className="absolute bottom-2 left-2 w-6 h-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center">
-              ×
-            </button>
-          </motion.div>
+          {/* Existing Photos */}
+          {photos?.slice(0, 5).map((photo, index) => (
+            <motion.div
+              key={photo.id}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: index * 0.1 }}
+              className="relative aspect-[3/4] rounded-2xl overflow-hidden"
+            >
+              <img
+                src={photo.photo_url}
+                alt="Profile"
+                className="h-full w-full object-cover"
+              />
+              {photo.is_primary && (
+                <div className="absolute top-2 left-2 px-2 py-1 rounded-md bg-secondary text-secondary-foreground text-xs font-medium">
+                  MAIN
+                </div>
+              )}
+            </motion.div>
+          ))}
 
-          {/* Additional Photos */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
-            className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-muted flex items-center justify-center"
-          >
-            <img
-              src={profileMan1}
-              alt="Profile 2"
-              className="h-full w-full object-cover"
-            />
-            <button className="absolute bottom-2 left-2 w-6 h-6 rounded-full bg-muted-foreground/50 text-foreground flex items-center justify-center text-sm">
-              ×
-            </button>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-muted flex items-center justify-center"
-          >
-            <img
-              src={profileMan1}
-              alt="Profile 3"
-              className="h-full w-full object-cover opacity-80"
-            />
-            <button className="absolute bottom-2 left-2 w-6 h-6 rounded-full bg-muted-foreground/50 text-foreground flex items-center justify-center text-sm">
-              ×
-            </button>
-          </motion.div>
-
-          {/* Empty Slots */}
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="aspect-[3/4] rounded-2xl border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors"
-          >
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <Plus className="h-5 w-5 text-primary-foreground" />
-            </div>
-          </motion.button>
-
-          <motion.button
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4 }}
-            className="aspect-[3/4] rounded-2xl border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors"
-          >
-            <Plus className="h-6 w-6 text-muted-foreground" />
-          </motion.button>
+          {/* Add Photo Button */}
+          {(photos?.length || 0) < 6 && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="aspect-[3/4] rounded-2xl border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
+                <Plus className="h-5 w-5 text-primary-foreground" />
+              </div>
+            </motion.button>
+          )}
         </div>
       </section>
 
@@ -117,9 +164,9 @@ const Profile = () => {
         <h2 className="font-semibold text-foreground mb-3">About Me</h2>
         <div className="p-4 rounded-2xl bg-muted/50 border border-border">
           <p className="text-foreground mb-2">
-            Software engineer by day, amateur Afrobeats DJ by night. Looking for someone to explore new restaurants in VI with. 🇳🇬
+            {profile.bio || "No bio yet. Add one to help people know you better!"}
           </p>
-          <span className="text-xs text-muted-foreground">112/500</span>
+          <span className="text-xs text-muted-foreground">{profile.bio?.length || 0}/500</span>
         </div>
       </section>
 
@@ -127,38 +174,33 @@ const Profile = () => {
       <section className="px-4 mb-6">
         <h2 className="font-semibold text-foreground mb-3">Basics</h2>
         <div className="space-y-3">
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border">
-            <Briefcase className="h-5 w-5 text-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Job Title</p>
-              <p className="text-foreground">Product Designer</p>
+          {profile.occupation && (
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border">
+              <Briefcase className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Occupation</p>
+                <p className="text-foreground">{profile.occupation}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </div>
+          )}
 
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border">
-            <Briefcase className="h-5 w-5 text-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Company</p>
-              <p className="text-foreground">Paystack</p>
+          {profile.education && (
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border">
+              <GraduationCap className="h-5 w-5 text-muted-foreground" />
+              <div className="flex-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Education</p>
+                <p className="text-foreground">{profile.education}</p>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </div>
-
-          <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border">
-            <GraduationCap className="h-5 w-5 text-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">School</p>
-              <p className="text-foreground">University of Lagos</p>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </div>
+          )}
 
           <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border">
             <MapPin className="h-5 w-5 text-muted-foreground" />
             <div className="flex-1">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Location</p>
-              <p className="text-foreground">Lekki Phase 1, Lagos</p>
+              <p className="text-foreground">{profile.location_city || "Not set"}</p>
             </div>
             <span className="text-xs text-muted-foreground">(Updates automatically)</span>
           </div>
@@ -170,9 +212,10 @@ const Profile = () => {
         <h2 className="font-semibold text-foreground mb-2">Interests</h2>
         <p className="text-sm text-muted-foreground mb-4">Pick up to 5 things you love.</p>
         <div className="flex flex-wrap gap-2">
-          {interests.map((interest) => (
-            <span key={interest} className="interest-tag">
-              {interest}
+          {userInterestNames.map((interest: any) => (
+            <span key={interest.id} className="interest-tag">
+              {interest.icon && <span className="mr-1">{interest.icon}</span>}
+              {interest.name}
             </span>
           ))}
           <button className="px-4 py-2 rounded-full text-sm font-medium border border-dashed border-border text-muted-foreground hover:border-primary hover:text-primary transition-colors">
@@ -189,54 +232,92 @@ const Profile = () => {
           <div>
             <p className="text-sm text-muted-foreground mb-3">Show me</p>
             <div className="flex gap-2">
-              {["Men", "Women", "Everyone"].map((option) => (
-                <button
-                  key={option}
-                  className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
-                    option === "Women"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
-                >
-                  {option}
-                </button>
-              ))}
+              {["male", "female", "non_binary"].map((option) => {
+                const label = option === "male" ? "Men" : option === "female" ? "Women" : "Everyone";
+                const isSelected = profile.gender_preference?.includes(option);
+                return (
+                  <button
+                    key={option}
+                    className={`px-6 py-2 rounded-full text-sm font-medium transition-colors ${
+                      isSelected
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-muted-foreground">Age Range</p>
-              <span className="text-foreground font-medium">21 - 35</span>
+              <span className="text-foreground font-medium">
+                {profile.min_age_preference} - {profile.max_age_preference}
+              </span>
             </div>
             <div className="h-1 bg-muted rounded-full relative">
-              <div className="absolute left-[20%] right-[30%] h-full bg-primary rounded-full" />
-              <div className="absolute left-[20%] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-background" />
-              <div className="absolute right-[30%] top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-background" />
+              <div 
+                className="absolute h-full bg-primary rounded-full" 
+                style={{
+                  left: `${((profile.min_age_preference - 18) / 52) * 100}%`,
+                  right: `${100 - ((profile.max_age_preference - 18) / 52) * 100}%`,
+                }}
+              />
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm text-muted-foreground">Maximum Distance</p>
-              <span className="text-foreground font-medium">50 km</span>
+              <span className="text-foreground font-medium">{profile.max_distance_km} km</span>
             </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>1km</span>
-              <span>100km+</span>
-            </div>
-            <div className="h-1 bg-muted rounded-full relative mt-2">
-              <div className="absolute left-0 w-1/2 h-full bg-primary rounded-full" />
-              <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-background" />
+            <div className="h-1 bg-muted rounded-full relative">
+              <div 
+                className="absolute left-0 h-full bg-primary rounded-full"
+                style={{ width: `${(profile.max_distance_km / 100) * 100}%` }}
+              />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Save Button */}
-      <div className="px-4 pb-4">
+      {/* Daily Stats */}
+      <section className="px-4 mb-6">
+        <h2 className="font-semibold text-foreground mb-3">Today's Stats</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-4 rounded-2xl bg-muted/50 border border-border text-center">
+            <p className="text-2xl font-bold text-foreground">{profile.daily_swipes_remaining}</p>
+            <p className="text-xs text-muted-foreground">Swipes remaining</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-muted/50 border border-border text-center">
+            <p className="text-2xl font-bold text-foreground">{profile.daily_super_likes_remaining}</p>
+            <p className="text-xs text-muted-foreground">Super Likes</p>
+          </div>
+        </div>
+      </section>
+
+      {/* Action Buttons */}
+      <div className="px-4 pb-4 space-y-3">
         <Button variant="hero" size="xl" className="w-full">
           Save Changes
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          size="xl" 
+          className="w-full text-destructive hover:text-destructive"
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+        >
+          {isSigningOut ? (
+            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+          ) : (
+            <LogOut className="h-5 w-5 mr-2" />
+          )}
+          Sign Out
         </Button>
       </div>
     </div>
