@@ -13,8 +13,9 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide on auth pages
-  if (["/", "/login", "/signup", "/welcome", "/forgot-password"].includes(location.pathname)) {
+  // Hide on auth pages and onboarding
+  const hiddenPaths = ["/", "/login", "/signup", "/welcome", "/forgot-password", "/onboarding", "/splash", "/verification"];
+  if (hiddenPaths.includes(location.pathname)) {
     return null;
   }
 
