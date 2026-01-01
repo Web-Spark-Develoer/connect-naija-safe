@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Logo } from "@/components/Logo";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,15 +23,22 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate login - Replace with Supabase auth
-    setTimeout(() => {
+    const { error } = await signIn(formData.email, formData.password);
+    
+    if (error) {
       setIsLoading(false);
       toast({
-        title: "Welcome back!",
-        description: "Taking you to discover new connections...",
+        title: "Login failed",
+        description: error.message,
+        variant: "destructive",
       });
-      navigate("/discover");
-    }, 1500);
+      return;
+    }
+
+    toast({
+      title: "Welcome back!",
+      description: "Taking you to discover new connections...",
+    });
   };
 
   return (

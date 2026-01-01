@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Mail, Lock, Eye, EyeOff, Shield, Check } from "lucide-react";
+import { ArrowLeft, Mail, Lock, Eye, EyeOff, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Signup = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { signUp } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,15 +45,22 @@ const Signup = () => {
 
     setIsLoading(true);
 
-    // Simulate signup - Replace with Supabase auth
-    setTimeout(() => {
+    const { error } = await signUp(formData.email, formData.password);
+    
+    if (error) {
       setIsLoading(false);
       toast({
-        title: "Account created!",
-        description: "Let's set up your profile...",
+        title: "Signup failed",
+        description: error.message,
+        variant: "destructive",
       });
-      navigate("/onboarding");
-    }, 1500);
+      return;
+    }
+
+    toast({
+      title: "Account created!",
+      description: "Please check your email to confirm, then set up your profile.",
+    });
   };
 
   return (
