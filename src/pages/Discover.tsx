@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, SlidersHorizontal, X, Heart, Star, Zap, RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { useDiscoveryProfiles, useSwipe, DiscoveryProfile } from "@/hooks/useDis
 import { useProfile } from "@/hooks/useProfile";
 
 const Discover = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: profiles, isLoading, refetch } = useDiscoveryProfiles();
   const { data: myProfile } = useProfile();
@@ -119,7 +121,7 @@ const Discover = () => {
           </span>
         </div>
 
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/discovery-settings")}>
           <SlidersHorizontal className="h-5 w-5" />
         </Button>
       </header>

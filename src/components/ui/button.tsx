@@ -15,15 +15,23 @@ const buttonVariants = cva(
         secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/90 rounded-2xl",
         ghost: "hover:bg-muted hover:text-foreground rounded-2xl",
         link: "text-primary underline-offset-4 hover:underline",
-        // Dating app specific variants
-        hero: "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground rounded-full shadow-glow-primary hover:shadow-[0_0_48px_hsla(168,84%,32%,0.6)] hover:-translate-y-0.5",
-        "hero-secondary": "bg-gradient-to-r from-secondary to-secondary-glow text-secondary-foreground rounded-full shadow-glow-secondary hover:shadow-[0_0_48px_hsla(350,89%,60%,0.6)] hover:-translate-y-0.5",
+        // Nigerian-themed variants
+        hero: "bg-gradient-to-r from-primary to-primary-glow text-primary-foreground rounded-full shadow-glow-primary hover:shadow-[0_0_48px_hsla(145,63%,38%,0.6)] hover:-translate-y-0.5",
+        "hero-secondary": "bg-gradient-to-r from-tertiary to-tertiary-glow text-tertiary-foreground rounded-full shadow-glow-tertiary hover:shadow-[0_0_48px_hsla(350,85%,55%,0.6)] hover:-translate-y-0.5",
         "hero-outline": "border-2 border-foreground/20 bg-transparent text-foreground hover:bg-foreground/10 rounded-full backdrop-blur-sm",
+        // Premium/Gold variants
+        premium: "bg-gradient-to-r from-secondary to-secondary-glow text-secondary-foreground rounded-full shadow-glow-secondary hover:shadow-[0_0_48px_hsla(45,100%,50%,0.6)] hover:-translate-y-0.5 font-bold",
+        "premium-outline": "border-2 border-secondary/50 bg-transparent text-secondary hover:bg-secondary/10 rounded-full",
+        // Action button variants
         action: "rounded-full bg-card border border-border shadow-card hover:scale-105 active:scale-95",
-        "action-like": "rounded-full bg-gradient-to-br from-secondary to-secondary-glow text-secondary-foreground shadow-glow-secondary hover:scale-110 active:scale-95",
+        "action-like": "rounded-full bg-gradient-to-br from-tertiary to-tertiary-glow text-tertiary-foreground shadow-glow-tertiary hover:scale-110 active:scale-95",
         "action-dislike": "rounded-full bg-card border border-border text-muted-foreground shadow-card hover:scale-110 hover:border-destructive hover:text-destructive active:scale-95",
         "action-superlike": "rounded-full bg-gradient-to-br from-primary to-primary-glow text-primary-foreground shadow-glow-primary hover:scale-110 active:scale-95",
+        "action-boost": "rounded-full bg-gradient-to-br from-secondary to-secondary-glow text-secondary-foreground shadow-glow-secondary hover:scale-110 active:scale-95",
+        // Glass variant
         glass: "glass rounded-2xl text-foreground hover:bg-muted/40",
+        // Success variant
+        success: "bg-success text-success-foreground hover:bg-success/90 rounded-2xl",
       },
       size: {
         default: "h-12 px-6 py-3 text-base",
