@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useCreateProfile, useInterests, useUpdateUserInterests } from "@/hooks/useProfile";
+import { useCreateProfile, useInterests, useUpdateUserInterests, useUserPhotos } from "@/hooks/useProfile";
+import PhotoUploader from "@/components/PhotoUploader";
 
 type GenderType = "male" | "female" | "non_binary" | "other";
 
@@ -33,6 +34,7 @@ const Onboarding = () => {
   const createProfile = useCreateProfile();
   const updateInterests = useUpdateUserInterests();
   const { data: interests } = useInterests();
+  const { data: photos = [] } = useUserPhotos();
   
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +54,7 @@ const Onboarding = () => {
     selectedInterests: [],
   });
 
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   const handleNext = () => {
     if (step < totalSteps) {
@@ -357,6 +359,25 @@ const Onboarding = () => {
             className="flex-1"
           >
             <h1 className="font-display text-3xl font-bold text-foreground mb-2">
+              Add your photos
+            </h1>
+            <p className="text-muted-foreground mb-8">
+              Add at least 1 photo to continue. More photos = more matches!
+            </p>
+
+            <PhotoUploader photos={photos} maxPhotos={6} showLabels={false} />
+          </motion.div>
+        )}
+
+        {step === 6 && (
+          <motion.div
+            key="step6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="flex-1"
+          >
+            <h1 className="font-display text-3xl font-bold text-foreground mb-2">
               Almost done!
             </h1>
             <p className="text-muted-foreground mb-8">
@@ -415,7 +436,8 @@ const Onboarding = () => {
             isLoading ||
             (step === 1 && !formData.display_name) ||
             (step === 2 && (!formData.date_of_birth || !formData.gender)) ||
-            (step === 3 && formData.gender_preference.length === 0)
+            (step === 3 && formData.gender_preference.length === 0) ||
+            (step === 5 && photos.length === 0)
           }
         >
           {isLoading ? "Creating profile..." : step === totalSteps ? "Let's Go!" : "Continue"}
