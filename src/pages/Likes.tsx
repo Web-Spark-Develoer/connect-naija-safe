@@ -1,11 +1,12 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Heart, Lock, Crown, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useLikes, useSwipe } from "@/hooks/useDiscovery";
 
 const Likes = () => {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { data: likesData, isLoading, refetch } = useLikes();
   const swipeMutation = useSwipe();
@@ -89,7 +90,7 @@ const Likes = () => {
             Upgrade to NaijaConnect Gold to see who liked you and match instantly.
           </p>
 
-          <Button variant="hero" size="xl" className="gap-2">
+          <Button variant="hero" size="xl" className="gap-2" onClick={() => navigate("/premium")}>
             <Crown className="h-5 w-5" />
             Upgrade to Gold
           </Button>
