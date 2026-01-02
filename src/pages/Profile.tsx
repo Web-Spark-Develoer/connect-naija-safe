@@ -81,7 +81,7 @@ const Profile = () => {
           Cancel
         </span>
         <h1 className="font-display text-lg font-bold text-foreground">Edit Profile</h1>
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
           <Settings className="h-5 w-5" />
         </Button>
       </header>
@@ -95,7 +95,10 @@ const Profile = () => {
       )}
 
       {/* Verification Status */}
-      <div className="mx-4 mb-4 p-3 rounded-2xl bg-muted/50 flex items-center gap-3">
+      <button 
+        onClick={() => !profile.is_verified && navigate("/verification")}
+        className="mx-4 mb-4 p-3 rounded-2xl bg-muted/50 flex items-center gap-3 w-[calc(100%-2rem)] text-left"
+      >
         <Shield className={`h-5 w-5 ${profile.is_verified ? "text-primary" : "text-muted-foreground"}`} />
         <div className="flex-1">
           <span className="font-medium text-foreground">
@@ -110,7 +113,7 @@ const Profile = () => {
         ) : (
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
         )}
-      </div>
+      </button>
 
       {/* Photos Section */}
       <section className="px-4 mb-6">
